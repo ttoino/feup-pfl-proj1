@@ -1,4 +1,5 @@
-import Data.List (elemIndex, intercalate, intersect, intersperse, sort, sortBy, union)
+import Data.Char (isLetter)
+import Data.List (elemIndex, intercalate, intersect, intersperse, nub, sort, sortBy, union)
 import Data.Maybe (fromJust)
 
 type Variable = Char
@@ -24,7 +25,7 @@ showCoefficient c
   | otherwise = s
   where
     s = show c
-    (int, dec) = splitAt (fromJust (elemIndex '.' s)) s
+    (int, dec) = span (/= '.') s
 
 showPolynomial :: Polynomial -> String
 showPolynomial (v, ms) = intercalate " + " (map showMonomial ms)
@@ -81,6 +82,30 @@ normalize (v, m) = (nv, sortBy sortMonomials nm)
     normalizeMonomials ((0, _) : ms) = normalizeMonomials ms
     normalizeMonomials (m : ms) = addMatching m ms : normalizeMonomials (filter (not . sameDegree m) ms)
     sortMonomials (ca, ea) (cb, eb) = compare eb ea
+
+splitOn :: Eq a => a -> [a] -> [[a]]
+splitOn x = splitBy (== x)
+
+splitBy :: (a -> Bool) -> [a] -> [[a]]
+splitBy f [] = []
+splitBy f (x : xs) | f x = splitBy f xs
+splitBy f a = p : splitBy f a'
+  where
+    (p, a') = break f a
+
+readPolynomial :: String -> Polynomial
+readPolynomial s = (vars, map readMonomial (splitOn '+' s))
+  where
+    readMonomial m = (read h, readVars vars (map (splitBy (\x -> x == '^' || x == ' ')) t))
+      where
+        (h : t) = splitOn '*' m
+    vars = nub $ sort $ filter isLetter s
+    readVars [] a = []
+    readVars (v : vs) o = readVarsHelper v o : readVars vs o
+    readVarsHelper v [] = 0
+    readVarsHelper v ([var, e] : o) | head var == v = read e
+    readVarsHelper v ([var] : o) | head var == v = 1
+    readVarsHelper v (x : xs) = readVarsHelper v xs
 
 a :: Polynomial
 a = ("x", [(7, [3]), (5, [1]), (1, [0])])
