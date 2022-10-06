@@ -1,4 +1,4 @@
-import Data.Char (isLetter)
+import Data.Char (isDigit, isLetter, isSpace)
 import Data.List (elemIndex, intercalate, intersect, intersperse, nub, sort, sortBy, union)
 import Data.Maybe (fromJust)
 
@@ -83,6 +83,9 @@ normalize (v, m) = (nv, sortBy sortMonomials nm)
     normalizeMonomials (m : ms) = addMatching m ms : normalizeMonomials (filter (not . sameDegree m) ms)
     sortMonomials (ca, ea) (cb, eb) = compare eb ea
 
+splitOnAny :: Eq a => [a] -> [a] -> [[a]]
+splitOnAny x = splitBy (`elem` x)
+
 splitOn :: Eq a => a -> [a] -> [[a]]
 splitOn x = splitBy (== x)
 
@@ -94,42 +97,64 @@ splitBy f a = p : splitBy f a'
     (p, a') = break f a
 
 readPolynomial :: String -> Polynomial
-readPolynomial s = (vars, map readMonomial (splitOn '+' s))
+readPolynomial s = (vars, readMonomials s')
   where
-    readMonomial m = (read h, readVars vars (map (splitBy (\x -> x == '^' || x == ' ')) t))
+    readMonomials :: String -> [Monomial]
+    readMonomials [] = []
+    readMonomials m = (readCoefficient c, foldr (zipWith (+)) [0 | x <- vars] v) : readMonomials t
       where
-        (h : t) = splitOn '*' m
-    vars = nub $ sort $ filter isLetter s
-    readVars [] a = []
-    readVars (v : vs) o = readVarsHelper v o : readVars vs o
-    readVarsHelper v [] = 0
-    readVarsHelper v ([var, e] : o) | head var == v = read e
-    readVarsHelper v ([var] : o) | head var == v = 1
-    readVarsHelper v (x : xs) = readVarsHelper v xs
+        (c, r) = span (\x -> isDigit x || x == '+' || x == '-') m
+        (v, t) = readVars r
+        readCoefficient [] = 1
+        readCoefficient "-" = -1
+        readCoefficient ('+' : o) = readCoefficient o
+        readCoefficient x = read x
 
-a :: Polynomial
-a = ("x", [(7, [3]), (5, [1]), (1, [0])])
+    readVars :: String -> ([[Exponent]], String)
+    readVars ('*' : r) = readVars r
+    readVars (v : r) | isLetter v = ([if v == var then readExponent e else 0 | var <- vars] : vs, tt)
+      where
+        (vs, tt) = readVars t
+        (e, t) = span (\x -> isDigit x || x == '^') r
+        readExponent [] = 1
+        readExponent ('^' : xs) = readExponent xs
+        readExponent e = read e
+    readVars r = ([[0 | x <- vars]], r)
 
-b :: Polynomial
-b =
-  ( "xyz",
-    [ (0, [2, 0, 0]),
-      (2, [0, 1, 0]),
-      (5, [0, 0, 1]),
-      (1, [0, 1, 0]),
-      (7, [0, 2, 0])
-    ]
-  )
+    vars = nub $ sort $ filter isLetter s'
+
+    s' = filter (not . isSpace) s
 
 main =
   do
-    putStrLn $ "a = " ++ showPolynomial (normalize a)
-    putStrLn $ "b = " ++ showPolynomial (normalize b)
+    putStr "Input a polynomial: "
+    input <- getLine
+    let a = readPolynomial input
+    putStrLn "You inputted the polynomial:"
+    putStr $ showPolynomial a
+    putStr " = "
+    let norm_a = normalize a
+    putStrLn $ showPolynomial norm_a
 
-    putStrLn $ "a + a = " ++ showPolynomial (normalize $ add a a)
-    putStrLn $ "b + b = " ++ showPolynomial (normalize $ add b b)
-    putStrLn $ "b + a = " ++ showPolynomial (normalize $ add b a)
+    putStr "Input another polynomial: "
+    input <- getLine
+    let b = readPolynomial input
+    putStrLn "You inputted the polynomial:"
+    putStr $ showPolynomial b
+    putStr " = "
+    let norm_b = normalize b
+    putStrLn $ showPolynomial norm_b
 
-    putStrLn $ "a * a = " ++ showPolynomial (normalize $ multiply a a)
-    putStrLn $ "b * b = " ++ showPolynomial (normalize $ multiply b b)
-    putStrLn $ "b * a = " ++ showPolynomial (normalize $ multiply b a)
+    let sum = add a b
+    putStrLn "Their sum:"
+    putStr $ showPolynomial sum
+    putStr " = "
+    let norm_sum = normalize sum
+    putStrLn $ showPolynomial norm_sum
+
+    let product = multiply a b
+    putStrLn "Their product:"
+    putStr $ showPolynomial product
+    putStr " = "
+    let norm_product = normalize product
+    putStrLn $ showPolynomial norm_product
