@@ -1,14 +1,18 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Peras where
 
 import Data.Char (chr, ord)
+import Data.List (intercalate)
 import Data.Map
   ( Map,
     empty,
     findWithDefault,
     fromList,
     toList,
+    union,
     unionWith,
     update,
   )
@@ -19,15 +23,15 @@ instance Enum PositiveOrZero where
   toEnum :: Int -> PositiveOrZero
   toEnum n
     | n == 0 = Zero
-    | n > 0 = Suc $ toEnum (n - 1)
+    | n > 0 = Suc $ toEnum (n Prelude.- 1)
     | otherwise = error "Cannot be negative"
   fromEnum :: PositiveOrZero -> Int
   fromEnum Zero = 0
-  fromEnum (Suc n) = 1 + fromEnum n
+  fromEnum (Suc n) = 1 Prelude.+ fromEnum n
 
 instance Num PositiveOrZero where
   (+) :: PositiveOrZero -> PositiveOrZero -> PositiveOrZero
-  a + b = toEnum $ fromEnum a + fromEnum b
+  a + b = toEnum $ fromEnum a Prelude.+ fromEnum b
   (*) :: PositiveOrZero -> PositiveOrZero -> PositiveOrZero
   a * b = toEnum $ fromEnum a * fromEnum b
   (-) :: PositiveOrZero -> PositiveOrZero -> PositiveOrZero
@@ -35,7 +39,7 @@ instance Num PositiveOrZero where
     | number < 0 = error "Negative difference"
     | otherwise = toEnum number
     where
-      number = fromEnum a - fromEnum b
+      number = fromEnum a Prelude.- fromEnum b
   abs :: PositiveOrZero -> PositiveOrZero
   abs n = n
   signum :: PositiveOrZero -> PositiveOrZero
@@ -44,13 +48,13 @@ instance Num PositiveOrZero where
   fromInteger n
     | n < 0 = error "Cannot be negative"
     | n == 0 = Zero
-    | otherwise = Suc (fromInteger (n - 1))
+    | otherwise = Suc (fromInteger (n Prelude.- 1))
   negate :: PositiveOrZero -> PositiveOrZero
   negate = error "Cannot negate value"
 
 instance Show PositiveOrZero where
   show :: PositiveOrZero -> String
-  show p = "Suc(" ++ [chr $ ord '0' + fromEnum p] ++ ")"
+  show p = "Suc(" ++ [chr $ ord '0' Prelude.+ fromEnum p] ++ ")"
 
 ---------------------END PositiveOrZero DATA TYPE DEFINITION------------------------------
 
@@ -73,17 +77,51 @@ normalize :: Polynomial -> Polynomial
 normalize p = [(c, exps) | (exps, c) <- toList (normalizeHelper p), c /= 0]
   where
     normalizeHelper [] = empty
-    normalizeHelper ((c, exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)
+    normalizeHelper ((c, exps) : xs) = unionWith (Prelude.+) (fromList [(exps, c)]) (normalizeHelper xs)
 
-derivate :: Polynomial -> Char -> Polynomial
-derivate p c = [derivateMonomial m c | m <- p]
+differentiate :: Polynomial -> Char -> Polynomial
+differentiate p c = [differentiateMonomial m c | m <- p]
 
-derivateMonomial :: Monomial -> Char -> Monomial
-derivateMonomial (coef, exps) c =
+differentiateMonomial :: Monomial -> Char -> Monomial
+differentiateMonomial (coef, exps) c =
   ( newCoef,
     if newCoef == 0
       then empty
-      else update (\a -> if a == Suc Zero then Nothing else Just (a - 1)) c exps
+      else update (\a -> if a == Suc Zero then Nothing else Just (a Prelude.- 1)) c exps
   )
   where
     newCoef = coef *= findWithDefault 0 c exps
+
+(+) :: Polynomial -> Polynomial -> Polynomial
+p1 + p2 = normalize [(c, exps) | (exps, c) <- toList (unionWith (Prelude.+) (sumHelper p1n) (sumHelper p2n)), c /= 0]
+  where
+    p1n = normalize p1
+    p2n = normalize p2
+
+    sumHelper [] = empty
+    sumHelper l = fromList [(exps, c) | (c, exps) <- l]
+
+(-) :: Polynomial -> Polynomial -> Polynomial
+p1 - p2 = normalize [(c, exps) | (exps, c) <- toList (unionWith (Prelude.-) (sumHelper p1n) (sumHelper p2n)), c /= 0]
+  where
+    p1n = normalize p1
+    p2n = normalize p2
+
+    sumHelper [] = empty
+    sumHelper l = fromList [(exps, c) | (c, exps) <- l]
+
+printPolynomial :: Polynomial -> String
+printPolynomial [] = ""
+printPolynomial [m] = printMonomial m
+printPolynomial (m1 : ms) = printMonomial m1 ++ printPolynomialHelper ms
+  where
+    printPolynomialHelper [] = ""
+    printPolynomialHelper (m : ms) = (if c < 0 then " - " else " + ") ++ printMonomialAbs m ++ printPolynomialHelper ms
+      where
+        (c, _) = m
+
+    printMonomialAbs (c, exps) = printMonomial (abs c, exps)
+
+printMonomial :: Monomial -> String
+printMonomial (0, _) = "0.0"
+printMonomial (c, exps) = show c ++ intercalate "" [v : "^" ++ show (fromEnum e) | (v, e) <- toList exps]
