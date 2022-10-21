@@ -1,7 +1,8 @@
 module Data.Monomial where
 
 import Data.Char (isAsciiLower, isDigit, isSpace)
-import Data.Map (Map, adjust, empty, fromList, mapWithKey, member, null, unionWith, (!))
+import Data.Map (Map, adjust, delete, empty, fromList, lookup, mapWithKey, member, null, unionWith)
+import Data.Maybe (fromJust, isNothing)
 import Data.Natural (Natural (One))
 import Util (showReal, showSuperscript)
 
@@ -33,8 +34,11 @@ instance Num Monomial where
 
 instance Differentiable Monomial where
   Monomial n m // v
-    | not $ member v m = 0
-    | otherwise = Monomial (n * fromInteger (toInteger (m ! v))) (adjust (\x -> x - One) v m)
+    | isNothing exp = 0
+    | exp == Just One = Monomial n (delete v m)
+    | otherwise = Monomial (n * fromInteger (toInteger (fromJust exp))) (adjust (\x -> x - One) v m)
+    where
+      exp = Data.Map.lookup v m
 
 instance Show Monomial where
   show (Monomial c m)
