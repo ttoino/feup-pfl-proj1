@@ -33,12 +33,10 @@ instance Num Monomial where
   negate (Monomial n m) = Monomial (-n) m
 
 instance Differentiable Monomial where
-  Monomial n m // v
-    | isNothing exp = 0
-    | exp == Just One = Monomial n (delete v m)
-    | otherwise = Monomial (n * fromInteger (toInteger (fromJust exp))) (adjust (\x -> x - One) v m)
-    where
-      exp = Data.Map.lookup v m
+  Monomial n m // v = case Data.Map.lookup v m of
+    Nothing -> 0
+    Just One -> Monomial n (delete v m)
+    Just exp -> Monomial (n * fromInteger (toInteger exp)) (adjust (\x -> x - One) v m)
 
 instance Show Monomial where
   show (Monomial c m)
