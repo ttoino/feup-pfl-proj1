@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Peras where
 
@@ -112,7 +111,7 @@ p1 - p2 = normalize [(c, exps) | (exps, c) <- toList (unionWith (Prelude.-) (sum
 
 printPolynomial :: Polynomial -> String
 printPolynomial [] = ""
-printPolynomial [m] = printMonomial m
+-- printPolynomial [m] = printMonomial m
 printPolynomial (m1 : ms) = printMonomial m1 ++ printPolynomialHelper ms
   where
     printPolynomialHelper [] = ""
@@ -123,5 +122,5 @@ printPolynomial (m1 : ms) = printMonomial m1 ++ printPolynomialHelper ms
     printMonomialAbs (c, exps) = printMonomial (abs c, exps)
 
 printMonomial :: Monomial -> String
-printMonomial (0, _) = "0.0"
+-- printMonomial (0, _) = "0.0"
 printMonomial (c, exps) = show c ++ intercalate "" [v : "^" ++ show (fromEnum e) | (v, e) <- toList exps]

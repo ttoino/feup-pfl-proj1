@@ -1,0 +1,98 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{orange}{rgb}{.7,.3,0}
+
+\makeatletter
+\lst@InstallKeywords k{types}{typestyle}\slshape{typestyle}{}ld
+\makeatother
+
+\lstset{
+    language=Haskell,
+    aboveskip=3mm,
+    belowskip=3mm,
+    showstringspaces=false,
+    basicstyle={\small\ttfamily},
+    keywordstyle=\color{blue},
+    commentstyle=\color{dkgreen},
+    stringstyle=\color{mauve},
+    typestyle=\color{orange},
+    breaklines=true,
+    breakatwhitespace=true,
+    moretypes={}
+}
+
+\title{PFL Project}
+\author{João Pereira, Nuno Pereira}
+
+\begin{document}
+    
+\maketitle
+
+\pagebreak
+
+\begin{abstract}
+    TODO
+\end{abstract}
+
+\tableofcontents
+
+\pagebreak
+
+\section{Introduction}
+
+    The goal of this project was to implement polynomials and common operations performed on them, such as summation or derivation, using the Haskell programming language.
+
+\section{Internal Representation}
+
+    For the internal representation of the polynomial data structure, we implemented the following:
+
+    \begin{lstlisting}
+
+    import Data.Map
+
+    data Natural = One | Suc Natural deriving (Eq, Ord)
+
+    type Variable = Char
+
+    type Exponent = Natural
+
+    type Coefficient = Double
+
+    data Monomial = Monomial Coefficient (Map Variable Exponent) deriving (Eq)
+
+    newtype Polynomial = Polynomial [Monomial] deriving (Eq)
+    \end{lstlisting}
+
+    This allows us to represent \textit{Polynional}s and \textit{Monomial}s in a way that naturally represents what they are, while also ensuring that the operations performed on them are efficient:
+
+    \begin{itemize}
+        \item doing work on a \textit{Polynomial} is (almost) the same as doing the same work to each of its \textit{Monomial}s;
+        \item working with the variables and degrees of each \textit{Monomial} is not only simplified but also more efficient because of the nature of the underlying \textit{Map} data structure (for example, normalizing a polynomial is done in \( O(k'km*log( \frac{n+1}{m+1} + k'), m \leq n \) time instead of \( O(k^2) \)):
+        % these complexities are getting very strange but the comparison term is the naive "nub-like" solutions which has a worst-case complexity of O(mk²), where k is the number of monomial and m is the number of exponents
+        \begin{itemize}
+            \item \( O(m*log( \frac{n+1}{m+1}), m \leq n \) for aggregating any 2 \textit{Monomial}s, where \textit{n} and \textit{m} are the sizes of the \textit{Monomial}s' "exponent map";
+            \item \( O(k-1) = O(k) \), where \textit{k} is the number of \textit{Monomial}s in the original \textit{Polynomial};
+            \item \( O(k'*log(k')) \) for sorting the aggregated \textit{Monomial}s, where \textit{k'} is the number of \textit{Monomial}s in the \textit{Polymial} that resulted from the previous step;
+        \end{itemize} 
+
+    \end{itemize}
+
+\pagebreak
+
+\appendix
+\section{Appendix}
+
+\subsection{Figures}
+
+TODO
+
+\end{document}
