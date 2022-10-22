@@ -1,19 +1,11 @@
 module Data.Monomial where
 
+import ClassesAndTypes (Coefficient, Differentiable (..), Exponent, Variable)
 import Data.Char (isAsciiLower, isDigit, isSpace)
 import Data.Map (Map, adjust, delete, empty, fromList, lookup, mapWithKey, member, null, toList, unionWith)
 import Data.Maybe (fromJust, isNothing)
 import Data.Natural (Natural (One))
 import Util (showReal, showSuperscript)
-
-type Exponent = Natural
-
-type Coefficient = Double
-
-type Variable = Char
-
-class Differentiable a where
-  (//) :: a -> Variable -> a
 
 data Monomial = Monomial Coefficient (Map Variable Exponent) deriving (Eq)
 
@@ -86,6 +78,7 @@ instance Read Monomial where
 
           readVarsHelper :: String -> [(Variable, Exponent)]
           readVarsHelper "" = []
+          readVarsHelper (' ' : s) = readVarsHelper s
           readVarsHelper s = (v, e) : readVarsHelper s''
             where
               readVar :: String -> (Variable, String)

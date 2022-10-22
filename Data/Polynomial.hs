@@ -1,9 +1,10 @@
 module Data.Polynomial where
 
+import ClassesAndTypes (Differentiable (..), Exponent, Variable)
 import Data.Char (isDigit, isLetter, isSpace)
 import Data.List (sortOn)
 import Data.Map (Map, empty, fromList, insertWith, toList, unionWith)
-import Data.Monomial (Differentiable (..), Exponent (..), Monomial (..), Variable (..))
+import Data.Monomial (Monomial (..))
 import Data.Ord (Down (..))
 
 newtype Polynomial = Polynomial [Monomial] deriving (Eq)
