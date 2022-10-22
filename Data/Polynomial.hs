@@ -1,9 +1,10 @@
 module Data.Polynomial where
 
 import Data.Char (isDigit, isLetter, isSpace)
-import Data.List (sort)
+import Data.List (sortOn)
 import Data.Map (Map, empty, fromList, insertWith, toList, unionWith)
 import Data.Monomial (Differentiable (..), Exponent (..), Monomial (..), Variable (..))
+import Data.Ord (Down (..))
 
 newtype Polynomial = Polynomial [Monomial] deriving (Eq)
 
@@ -34,7 +35,7 @@ instance Read Polynomial where
   readsPrec _ s = [(Polynomial $ read s, "")]
 
 normalize :: Polynomial -> Polynomial
-normalize (Polynomial p) = Polynomial $ sort [Monomial c exps | (exps, c) <- toList (normalizeHelper p), c /= 0]
+normalize (Polynomial p) = Polynomial $ sortOn Down [Monomial c exps | (exps, c) <- toList (normalizeHelper p), c /= 0]
   where
     normalizeHelper [] = empty
     normalizeHelper ((Monomial c exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)

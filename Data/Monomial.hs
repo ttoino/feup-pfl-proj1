@@ -1,7 +1,7 @@
 module Data.Monomial where
 
 import Data.Char (isAsciiLower, isDigit, isSpace)
-import Data.Map (Map, adjust, delete, empty, fromList, lookup, mapWithKey, member, null, unionWith)
+import Data.Map (Map, adjust, delete, empty, fromList, lookup, mapWithKey, member, null, toList, unionWith)
 import Data.Maybe (fromJust, isNothing)
 import Data.Natural (Natural (One))
 import Util (showReal, showSuperscript)
@@ -52,7 +52,11 @@ instance Show Monomial where
 instance Ord Monomial where
   Monomial ca ea <= Monomial cb eb
     | ea == eb = ca <= cb
-    | otherwise = ea <= eb
+    | otherwise = or $ zipWith compare (toList ea) (toList eb)
+    where
+      compare (v1, e1) (v2, e2)
+        | v1 == v2 = e1 <= e2
+        | otherwise = v1 >= v2
 
 instance Read Monomial where
   readsPrec _ s = [readMonomial s]
@@ -69,7 +73,9 @@ instance Read Monomial where
           (f, s) = readCoefficient cs
       readCoefficient ('+' : cs) = readCoefficient cs
       readCoefficient (' ' : cs) = readCoefficient cs
-      readCoefficient cs = (read f, s)
+      readCoefficient cs = case f of
+        "" -> (1, s)
+        f -> (read f, s)
         where
           (f, s) = span (\c -> isDigit c || c == '.') cs
 

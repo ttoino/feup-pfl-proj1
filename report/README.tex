@@ -27,14 +27,16 @@
     typestyle=\color{orange},
     breaklines=true,
     breakatwhitespace=true,
-    moretypes={}
+    moretypes={
+        Map, Natural, Variable, Exponent, Coefficient, Monomial, Polynomial
+    }
 }
 
 \title{PFL Project}
 \author{João Pereira, Nuno Pereira}
 
 \begin{document}
-    
+
 \maketitle
 
 \pagebreak
@@ -49,42 +51,49 @@
 
 \section{Introduction}
 
-    The goal of this project was to implement polynomials and common operations performed on them, such as summation or derivation, using the Haskell programming language.
+The goal of this project was to implement polynomials and common operations performed on them, such as addition or derivation, using the Haskell programming language.
 
 \section{Internal Representation}
 
-    For the internal representation of the polynomial data structure, we implemented the following:
+For the internal representation of the polynomial data structure, we implemented the following:
 
-    \begin{lstlisting}
+\begin{lstlisting}
+data Natural = One | Suc Natural
+    deriving (Eq, Ord)
 
-    import Data.Map
+type Variable = Char
 
-    data Natural = One | Suc Natural deriving (Eq, Ord)
+type Exponent = Natural
 
-    type Variable = Char
+type Coefficient = Double
 
-    type Exponent = Natural
+data Monomial = Monomial Coefficient (Map Variable Exponent)
+    deriving (Eq)
 
-    type Coefficient = Double
+newtype Polynomial = Polynomial [Monomial]
+    deriving (Eq)
+\end{lstlisting}
 
-    data Monomial = Monomial Coefficient (Map Variable Exponent) deriving (Eq)
+This allows us to represent \lstinline{Polynomial}s and \lstinline{Monomial}s in a way that naturally represents what they are, while also ensuring that the operations performed on them are efficient:
 
-    newtype Polynomial = Polynomial [Monomial] deriving (Eq)
-    \end{lstlisting}
+\begin{itemize}
+    \item doing work on a \lstinline{Polynomial} is (almost) the same as doing the same work to each of its \lstinline{Monomial}s;
 
-    This allows us to represent \textit{Polynional}s and \textit{Monomial}s in a way that naturally represents what they are, while also ensuring that the operations performed on them are efficient:
+    \item working with the variables and degrees of each \lstinline{Monomial} is not only simplified but also more efficient because of the nature of the underlying \lstinline{Map} data structure (for example, normalizing a polynomial is done in $ \mathcal{O} \left( k' k m \times \log \left( \frac{n+1}{m+1} + k' \right) \right), m \leq n $ time instead of $ O(k^2) $):
+          % these complexities are getting very strange but the comparison term is the naive "nub-like" solutions which has a worst-case complexity of O(mk²), where k is the number of monomial and m is the number of exponents
+          \begin{itemize}
+              \item $ \mathcal{O} \left( m \times \log \left( \frac{n+1}{m+1} \right) \right), m \leq n $ for aggregating any 2 \lstinline{Monomial}s, where $n$ and $m$ are the sizes of the \lstinline{Monomial}s' "exponent map";
 
-    \begin{itemize}
-        \item doing work on a \textit{Polynomial} is (almost) the same as doing the same work to each of its \textit{Monomial}s;
-        \item working with the variables and degrees of each \textit{Monomial} is not only simplified but also more efficient because of the nature of the underlying \textit{Map} data structure (for example, normalizing a polynomial is done in \( O(k'km*log( \frac{n+1}{m+1} + k'), m \leq n \) time instead of \( O(k^2) \)):
-        % these complexities are getting very strange but the comparison term is the naive "nub-like" solutions which has a worst-case complexity of O(mk²), where k is the number of monomial and m is the number of exponents
-        \begin{itemize}
-            \item \( O(m*log( \frac{n+1}{m+1}), m \leq n \) for aggregating any 2 \textit{Monomial}s, where \textit{n} and \textit{m} are the sizes of the \textit{Monomial}s' "exponent map";
-            \item \( O(k-1) = O(k) \), where \textit{k} is the number of \textit{Monomial}s in the original \textit{Polynomial};
-            \item \( O(k'*log(k')) \) for sorting the aggregated \textit{Monomial}s, where \textit{k'} is the number of \textit{Monomial}s in the \textit{Polymial} that resulted from the previous step;
-        \end{itemize} 
+              \item $ \mathcal{O} (k-1) = \mathcal{O} (k) $, where $k$ is the number of \lstinline{Monomial}s in the original \lstinline{Polynomial};
 
-    \end{itemize}
+              \item $ \mathcal{O} (k' \times \log(k')) $ for sorting the aggregated \lstinline{Monomial}s, where \textit{k'} is the number of \lstinline{Monomial}s in the \lstinline{Polynomial} that resulted from the previous step;
+          \end{itemize}
+
+\end{itemize}
+
+\section{Implementation}
+
+\section{Usage examples}
 
 \pagebreak
 
