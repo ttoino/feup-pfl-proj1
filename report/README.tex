@@ -5,14 +5,16 @@
 \usepackage{listings}
 \usepackage{color}
 \usepackage{hyperref}
+\usepackage[utf8x]{inputenc}
 
-\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{dkgreen}{rgb}{0,0.3,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
 \definecolor{mauve}{rgb}{0.58,0,0.82}
 \definecolor{orange}{rgb}{.7,.3,0}
 
 \makeatletter
 \lst@InstallKeywords k{types}{typestyle}\slshape{typestyle}{}ld
+\lst@InstallKeywords k{prompt}{promptstyle}\slshape{promptstyle}{}ld
 \makeatother
 
 \lstset{
@@ -25,11 +27,17 @@
     commentstyle=\color{dkgreen},
     stringstyle=\color{mauve},
     typestyle=\color{orange},
+    promptstyle=\color{dkgreen},
+    escapeinside={\%@}{@)},
     breaklines=true,
     breakatwhitespace=true,
     moretypes={
         Map, Natural, Variable, Exponent, Coefficient, Monomial, Polynomial
-    }
+    },
+    moreprompt={
+        ghci>
+    },
+    alsoletter=>
 }
 
 \title{PFL Project}
@@ -81,7 +89,7 @@ This allows us to represent \lstinline{Polynomial}s and \lstinline{Monomial}s in
 
     \item working with the variables and degrees of each \lstinline{Monomial} is not only simplified but also more efficient because of the nature of the underlying \lstinline{Map} data structure.
 
-    For example, normalizing a polynomial is done in $ \mathcal{O} \left( k' k m \times \log \left( \frac{n+1}{m+1} + k' \right) \right), m \leq n $ time instead of $ O(m k^2) $, like we had in a previous implementation:
+          For example, normalizing a polynomial is done in $ \mathcal{O} \left( k' k m \times \log \left( \frac{n+1}{m+1} + k' \right) \right), m \leq n $ time instead of $ \mathcal{O} \left( m k^2 \right) $, like we had in a previous implementation:
           % these complexities are getting very strange but the comparison term is the naive "nub-like" solutions which has a worst-case complexity of O(mk²), where k is the number of monomial and m is the number of exponents
           % need to check if it actually is more efficient
           \begin{itemize}
@@ -109,7 +117,7 @@ normalize (Polynomial p) = Polynomial $ sortOn Down [Monomial c exps | (exps, c)
     normalizeHelper ((Monomial c exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)    
     \end{lstlisting}
 
-    In the \lstinline{normalize} function we process each \lstinline{Monomial} that composes the \lstinline{Polynomial} only once, "accumulating" the desired results, which are then re-ordered, converted back into \lstinline{Monomial}s and sorted. This strategy works because, by mapping an "exponent map" to a coefficient and exploiting the \lstinline{unionWith (+)} function, we only need to calculate the union of all the \lstinline{Monomial}s: \lstinline{Monomial}s with the same "exponent map" simply have their coefficients added.
+          In the \lstinline{normalize} function we process each \lstinline{Monomial} that composes the \lstinline{Polynomial} only once, "accumulating" the desired results, which are then re-ordered, converted back into \lstinline{Monomial}s and sorted. This strategy works because, by mapping an "exponent map" to a coefficient and exploiting the \lstinline{unionWith (+)} function, we only need to calculate the union of all the \lstinline{Monomial}s: \lstinline{Monomial}s with the same "exponent map" simply have their coefficients added.
 
     \item \begin{lstlisting}
 instance Show Polynomial where
@@ -120,17 +128,128 @@ instance Show Polynomial where
         showSign c = if c < 0 then " - " else " + "
     \end{lstlisting}
 
-    In the \lstinline{show} function the \lstinline{Monomial}s are printed one at a time using the coefficient of the next \lstinline{Monomial} in the list to define the sign to show: '\lstinline{-}' if it is negative, '\lstinline{+}' otherwise.
-    
+          In the \lstinline{show} function the \lstinline{Monomial}s are printed one at a time using the coefficient of the next \lstinline{Monomial} in the list to define the sign to show: '\lstinline{-}' if it is negative, '\lstinline{+}' otherwise.
+
     \item \begin{lstlisting}
 instance Differentiable Polynomial where
     Polynomial p // v = normalize $ Polynomial $ map (// v) p
     \end{lstlisting}
 
-    Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
+          Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
 \end{itemize}
-    
+
 \section{Usage examples}
+
+As the program is designed to be used inside of \lstinline{ghci}, all examples will assume the program has been ran as \lstinline{ghci Main}.
+
+\subsection{Inputting and outputting polynomials}
+
+A polynomial can be inputted directly as its internal representation:
+
+\begin{lstlisting}
+ghci> Polynomial [Monomial 0 (fromList [('x', 2)]), Monomial 2 (fromList [('y', 1)]), Monomial 5 (fromList [('z', 1)]), Monomial 1 (fromList [('y', 1)]), Monomial 7 (fromList [('y', 2)])]
+%@0x² + 2y + 5z + y + 7y²@)
+\end{lstlisting}
+
+Or by using \lstinline{read} and inputting a properly formatted\footnote{The format for a monomial is \lstinline{[-+]?\\d*\\.\\d*(\\*?[a-z]\\^?\\d*)*}} string:
+
+\begin{lstlisting}
+ghci> read "0*x^2 + 2*y + 5*z + y + 7*y^2" :: Polynomial
+%@0x² + 2y + 5z + y + 7y²@)
+\end{lstlisting}
+
+A simplified format is also supported:
+
+\begin{lstlisting}
+ghci> read "0x2 + 2y + 5z + y + 7y2" :: Polynomial
+%@0x² + 2y + 5z + y + 7y²@)
+\end{lstlisting}
+
+Polynomials will always be outputted in their formatted form by \lstinline{ghci}, as the class \lstinline{Show} has been instanced.
+As so, \lstinline{show} can also be used to get a string with the formatted polynomial.
+
+\begin{lstlisting}
+ghci> show (read "0x2 + 2y + 5z + y + 7y2" :: Polynomial)
+"0x\178 + 2y + 5z + y + 7y\178"
+\end{lstlisting}
+
+\subsection{Normalizing polynomials}
+
+A polynomial can be normalized using the \lstinline{normalize} function.
+Polynomials will also get normalized after most operations, but this can be skipped.
+
+\begin{lstlisting}
+ghci> normalize $ read "0*x^2 + 2*y + 5*z + y + 7*y^2" :: Polynomial
+%@7y² + 3y + 5z@)
+\end{lstlisting}
+
+\subsection{Adding, subtracting and multiplying polynomials}
+
+The following examples will use the polynomials:
+
+$$ P_1 = x^3 + x^2 + 12y + 0 $$
+$$ P_2 = 4x + 5y + 8 + 10z $$
+
+To add polynomials, use the \lstinline{(+)} operator, or the \lstinline{(!+)} operator, if normalization is to be skipped.
+
+\begin{lstlisting}
+ghci> p1 + p2
+%@x³ + x² + 4x + 17y + 10z + 8@)
+ghci> p1 !+ p2
+%@x³ + x² + 12y + 0 + 4x + 5y + 8 + 10z@)
+\end{lstlisting}
+
+To subtract polynomials, use the \lstinline{(-)} operator, or the \lstinline{(!-)} operator, if normalization is to be skipped.
+
+\begin{lstlisting}
+ghci> p1 - p2
+%@x³ + x² - 4x + 7y - 10z - 8@)
+ghci> p1 !- p2
+%@x³ + x² + 12y + 0 - 4x - 5y - 8 - 10z@)
+\end{lstlisting}
+
+To multiply polynomials, use the \lstinline{(*)} operator, or the \lstinline{(!*)} operator, if normalization is to be skipped.
+
+\begin{lstlisting}
+ghci> p1 * p2
+%@4x⁴ + 12x³ + 5x³y + 10x³z + 8x² + 48xy + 5x²y + 10x²z + 60y² + 96y + 120yz@)
+ghci> p1 !* p2
+%@4x⁴ + 5x³y + 8x³ + 10x³z + 4x³ + 5x²y + 8x² + 10x²z + 48xy + 60y² + 96y + 120yz + 0x + 0y + 0 + 0z@)
+\end{lstlisting}
+
+\subsection{Differentiating polynomials}
+
+To differentiate a polynomial, use the \lstinline{(//)} operator, or the \lstinline{(!//)} operator, if normalization is to be skipped.
+The second argument is the variable to differentiate by.
+
+\begin{lstlisting}
+ghci> (read "x3 + x2 + 12y + 5" :: Polynomial) // 'x'
+%@3x² + 2x@)
+ghci> (read "x3 + x2 + 12y + 5" :: Polynomial) !// 'x'
+%@3x² + 2x + 0 + 0@)
+ghci> (read "x3 + x2 + 12y + 5" :: Polynomial) // 'y'
+%@12@)
+ghci> (read "x3 + x2 + 12y + 5" :: Polynomial) !// 'y'
+%@0 + 0 + 12 + 0@)
+\end{lstlisting}
+
+\subsection{Other operations}
+
+To get the absolute value of a polynomial, use the \lstinline{abs} function.
+This will make all coefficients non-negative.
+
+\begin{lstlisting}
+ghci> abs $ read "-x3 + x2 - 12y + 5" :: Polynomial
+%@x³ + x² + 12y + 5@)
+\end{lstlisting}
+
+To negate a polynomial, use the \lstinline{negate} function.
+This will flip the sign of all coefficients.
+
+\begin{lstlisting}
+ghci> negate $ read "-x3 + x2 - 12y + 5" :: Polynomial
+%@x³ - x² + 12y - 5@)
+\end{lstlisting}
 
 \pagebreak
 

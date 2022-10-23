@@ -10,9 +10,9 @@ import Data.Ord (Down (..))
 newtype Polynomial = Polynomial [Monomial] deriving (Eq)
 
 instance Num Polynomial where
-  Polynomial x + Polynomial y = normalize $ Polynomial $ x ++ y
+  x + y = normalize $ x !+ y
 
-  Polynomial x * Polynomial y = normalize $ Polynomial [i * j | i <- x, j <- y]
+  x * y = normalize $ x !* y
 
   abs (Polynomial x) = Polynomial $ map abs x
 
@@ -23,7 +23,7 @@ instance Num Polynomial where
   negate (Polynomial x) = Polynomial $ map negate x
 
 instance Differentiable Polynomial where
-  Polynomial p // v = normalize $ Polynomial $ map (// v) p
+  p // v = normalize $ p !// v
 
 instance Show Polynomial where
   show (Polynomial []) = ""
@@ -34,6 +34,18 @@ instance Show Polynomial where
 
 instance Read Polynomial where
   readsPrec _ s = [(Polynomial $ read s, "")]
+
+(!+) :: Polynomial -> Polynomial -> Polynomial
+Polynomial x !+ Polynomial y = Polynomial $ x ++ y
+
+(!-) :: Polynomial -> Polynomial -> Polynomial
+x !- y = x !+ negate y
+
+(!*) :: Polynomial -> Polynomial -> Polynomial
+Polynomial x !* Polynomial y = Polynomial [i * j | i <- x, j <- y]
+
+(!//) :: Polynomial -> Variable -> Polynomial
+Polynomial p !// v = Polynomial $ map (// v) p
 
 normalize :: Polynomial -> Polynomial
 normalize (Polynomial p) = Polynomial $ sortOn Down [Monomial c exps | (exps, c) <- toList (normalizeHelper p), c /= 0]
