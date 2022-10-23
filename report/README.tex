@@ -79,8 +79,11 @@ This allows us to represent \lstinline{Polynomial}s and \lstinline{Monomial}s in
 \begin{itemize}
     \item doing work on a \lstinline{Polynomial} is (almost) the same as doing the same work to each of its \lstinline{Monomial}s;
 
-    \item working with the variables and degrees of each \lstinline{Monomial} is not only simplified but also more efficient because of the nature of the underlying \lstinline{Map} data structure (for example, normalizing a polynomial is done in $ \mathcal{O} \left( k' k m \times \log \left( \frac{n+1}{m+1} + k' \right) \right), m \leq n $ time instead of $ O(k^2) $):
+    \item working with the variables and degrees of each \lstinline{Monomial} is not only simplified but also more efficient because of the nature of the underlying \lstinline{Map} data structure.
+
+    For example, normalizing a polynomial is done in $ \mathcal{O} \left( k' k m \times \log \left( \frac{n+1}{m+1} + k' \right) \right), m \leq n $ time instead of $ O(m k^2) $, like we had in a previous implementation:
           % these complexities are getting very strange but the comparison term is the naive "nub-like" solutions which has a worst-case complexity of O(mk²), where k is the number of monomial and m is the number of exponents
+          % need to check if it actually is more efficient
           \begin{itemize}
               \item $ \mathcal{O} \left( m \times \log \left( \frac{n+1}{m+1} \right) \right), m \leq n $ for aggregating any 2 \lstinline{Monomial}s, where $n$ and $m$ are the sizes of the \lstinline{Monomial}s' "exponent map";
 
@@ -89,10 +92,44 @@ This allows us to represent \lstinline{Polynomial}s and \lstinline{Monomial}s in
               \item $ \mathcal{O} (k' \times \log(k')) $ for sorting the aggregated \lstinline{Monomial}s, where \textit{k'} is the number of \lstinline{Monomial}s in the \lstinline{Polynomial} that resulted from the previous step;
           \end{itemize}
 
+    \item ensuring that the exponents used are \lstinline{Natural} numbers better models the mathematical definition of a \lstinline{Monomial} as well as allowing to catch unexpected bugs arising from the use of negative exponents.
+
 \end{itemize}
+
+\pagebreak
 
 \section{Implementation}
 
+\begin{itemize}
+    \item \begin{lstlisting}
+normalize :: Polynomial -> Polynomial
+normalize (Polynomial p) = Polynomial $ sortOn Down [Monomial c exps | (exps, c) <- toList (normalizeHelper p), c /= 0]
+    where
+    normalizeHelper [] = empty
+    normalizeHelper ((Monomial c exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)    
+    \end{lstlisting}
+
+    In the \lstinline{normalize} function we process each \lstinline{Monomial} that composes the \lstinline{Polynomial} only once, "accumulating" the desired results, which are then re-ordered, converted back into \lstinline{Monomial}s and sorted. This strategy works because, by mapping an "exponent map" to a coefficient and exploiting the \lstinline{unionWith (+)} function, we only need to calculate the union of all the \lstinline{Monomial}s: \lstinline{Monomial}s with the same "exponent map" simply have their coefficients added.
+
+    \item \begin{lstlisting}
+instance Show Polynomial where
+    show (Polynomial []) = ""
+    show (Polynomial [m]) = show m
+    show (Polynomial (m : (Monomial c e) : ms)) = show m ++ showSign c ++ show (Polynomial (abs (Monomial c e) : ms))
+        where
+        showSign c = if c < 0 then " - " else " + "
+    \end{lstlisting}
+
+    In the \lstinline{show} function the \lstinline{Monomial}s are printed one at a time using the coefficient of the next \lstinline{Monomial} in the list to define the sign to show: '\lstinline{-}' if it is negative, '\lstinline{+}' otherwise.
+    
+    \item \begin{lstlisting}
+instance Differentiable Polynomial where
+    Polynomial p // v = normalize $ Polynomial $ map (// v) p
+    \end{lstlisting}
+
+    Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
+\end{itemize}
+    
 \section{Usage examples}
 
 \pagebreak
