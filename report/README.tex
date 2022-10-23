@@ -32,12 +32,14 @@
     breaklines=true,
     breakatwhitespace=true,
     moretypes={
-        Map, Natural, Variable, Exponent, Coefficient, Monomial, Polynomial
+        Map, Natural, Variable, Exponent, Coefficient, Monomial, Polynomial, Differentiable
     },
     moreprompt={
         ghci>
     },
-    alsoletter=>
+    alsoletter=>,
+    numbers=left,
+    stepnumber=5,
 }
 
 \title{PFL Project}
@@ -108,34 +110,315 @@ This allows us to represent \lstinline{Polynomial}s and \lstinline{Monomial}s in
 
 \section{Implementation}
 
+\subsection{Polynomial}
+
 \begin{itemize}
     \item \begin{lstlisting}
 normalize :: Polynomial -> Polynomial
 normalize (Polynomial p) = Polynomial $ sortOn Down [Monomial c exps | (exps, c) <- toList (normalizeHelper p), c /= 0]
     where
-    normalizeHelper [] = empty
-    normalizeHelper ((Monomial c exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)    
+        normalizeHelper :: [Monomial] -> Map (Map Variable Exponent) Coefficient
+        normalizeHelper [] = empty
+        normalizeHelper ((Monomial c exps) : xs) = unionWith (+) (fromList [(exps, c)]) (normalizeHelper xs)    
     \end{lstlisting}
 
           In the \lstinline{normalize} function we process each \lstinline{Monomial} that composes the \lstinline{Polynomial} only once, "accumulating" the desired results, which are then re-ordered, converted back into \lstinline{Monomial}s and sorted. This strategy works because, by mapping an "exponent map" to a coefficient and exploiting the \lstinline{unionWith (+)} function, we only need to calculate the union of all the \lstinline{Monomial}s: \lstinline{Monomial}s with the same "exponent map" simply have their coefficients added.
 
     \item \begin{lstlisting}
 instance Show Polynomial where
+    show :: Polynomial -> String
     show (Polynomial []) = ""
     show (Polynomial [m]) = show m
     show (Polynomial (m : (Monomial c e) : ms)) = show m ++ showSign c ++ show (Polynomial (abs (Monomial c e) : ms))
         where
-        showSign c = if c < 0 then " - " else " + "
+            showSign c = if c < 0 then " - " else " + "
     \end{lstlisting}
 
           In the \lstinline{show} function the \lstinline{Monomial}s are printed one at a time using the coefficient of the next \lstinline{Monomial} in the list to define the sign to show: '\lstinline{-}' if it is negative, '\lstinline{+}' otherwise.
 
     \item \begin{lstlisting}
 instance Differentiable Polynomial where
-    Polynomial p // v = normalize $ Polynomial $ map (// v) p
+    (//) :: Polynomial -> Variable -> Polynomial
+    p // v = normalize $ p !// v
     \end{lstlisting}
 
-          Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
+    Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
+    
+    \item \begin{lstlisting}
+instance Num Polynomial where
+    (+) :: Polynomial -> Polynomial -> Polynomial
+    x + y = normalize $ x !+ y
+
+    (*) :: Polynomial -> Polynomial -> Polynomial
+    x * y = normalize $ x !* y
+    
+    abs :: Polynomial -> Polynomial
+    abs (Polynomial x) = Polynomial $ map abs x
+    
+    signum :: Polynomial -> Polynomial
+    signum = error "Not implemented"
+    
+    fromInteger :: Integer -> Polynomial
+    fromInteger x = Polynomial [fromInteger x]
+    
+    negate :: Polynomial -> Polynomial
+    negate (Polynomial x) = Polynomial $ map negate x
+    \end{lstlisting}
+
+    Makes a \lstinline{Polynomial} be treated as a \lstinline{Num} so that common number operations can be performed on \lstinline{Polynomial}s. This is basically a way to perform the same operations on all the \lstinline{Monomial}s that make up a \lstinline{Polynomial}.
+
+    \item \begin{lstlisting}
+instance Read Polynomial where
+    readsPrec :: Int -> ReadS Polynomial
+    readsPrec _ s = [(Polynomial $ read s, "")]
+    \end{lstlisting}
+
+    Utility instantiation of \lstinline{Read} so that \lstinline{Polynomial}s can be parsed directly from an input string.
+
+    \item \begin{lstlisting}
+(!+) :: Polynomial -> Polynomial -> Polynomial
+Polynomial x !+ Polynomial y = Polynomial $ x ++ y
+    \end{lstlisting}
+
+    Adds two \lstinline{Polynomial}s, without normalizing the output. Since \lstinline{Polynomial}s are just a list of \lstinline{Monomial}s, this just creates a \lstinline{Polynomial} that results from the concatenation of all the \lstinline{Monomial}s in the two input \lstinline{Polynomial}s.
+
+    \item \begin{lstlisting}
+(!-) :: Polynomial -> Polynomial -> Polynomial
+x !- y = x !+ negate y
+    \end{lstlisting}
+
+    Subtracts two \lstinline{Polynomial}s, without normalizing the output. This just calls \lstinline{(!+)} but having the second \lstinline{Polynomial} negated.
+
+    \item \begin{lstlisting}
+(!*) :: Polynomial -> Polynomial -> Polynomial
+Polynomial x !* Polynomial y = Polynomial [i * j | i <- x, j <- y]
+    \end{lstlisting}
+
+    Multiplies both \lstinline{Polynomial}s, without normalizing the output. This is basically performing a Cartesian product between the inputs' \lstinline{Monomial}s.
+
+    \item \begin{lstlisting}
+(!//) :: Polynomial -> Variable -> Polynomial
+Polynomial p !// v = Polynomial $ map (// v) p
+    \end{lstlisting}
+
+    Differentiates a \lstinline{Polynomial} without normalizing the output. This just applies a mapping to differentiate each of this \lstinline{Polynomial}'s \lstinline{Monomial}s.
+
+\end{itemize}
+
+\subsection{Monomial}
+
+\begin{itemize}
+    \item \begin{lstlisting}
+instance Differentiable Monomial where
+    (//) :: Monomial -> Variable -> Monomial
+    Monomial n m // v = case Data.Map.lookup v m of
+        Nothing -> 0
+        Just One -> Monomial n (delete v m)
+        Just exp -> Monomial (n * fromInteger (toInteger exp)) (adjust (\x -> x - One) v m)      
+    \end{lstlisting}
+    
+    Makes a \lstinline{Monomial} inherently differentiable. If the new exponent of the variable of differentiation in the \lstinline{Monomial} is 1, then the exponent is removed from this \lstinline{Monomial}'s "exponent map". Otherwise, the model remains the same, having in mind the differentiation rules of mathematical monomials.
+
+    \item \begin{lstlisting}
+instance Num Monomial where
+    (+) :: Monomial -> Monomial -> Monomial
+    Monomial c1 m1 + Monomial c2 m2
+        | m1 == m2 = Monomial (c1 + c2) m1
+        | otherwise = error "Can't add monomials with different degrees"
+    
+    (*) :: Monomial -> Monomial -> Monomial
+    Monomial c1 m1 * Monomial c2 m2 = Monomial (c1 * c2) (unionWith (+) m1 m2)
+    
+    abs :: Monomial -> Monomial
+    abs (Monomial n m) = Monomial (abs n) m
+    
+    signum :: Monomial -> Monomial
+    signum (Monomial n m) = Monomial (signum n) empty
+    
+    fromInteger :: Integer -> Monomial
+    fromInteger n = Monomial (fromInteger n) empty
+    
+    negate :: Monomial -> Monomial
+    negate (Monomial n m) = Monomial (-n) m
+    \end{lstlisting}
+
+    Makes a \lstinline{Monomial} be treated as a \lstinline{Num}, so that common number operations can be performed on them.
+
+    \item \begin{lstlisting}
+instance Ord Monomial where
+    (<=) :: Monomial -> Monomial -> Bool
+    Monomial ca ea <= Monomial cb eb
+        | ea == eb = ca <= cb
+        | otherwise = or $ zipWith compare (toList ea) (toList eb)
+        where
+            compare (v1, e1) (v2, e2)
+                | v1 == v2 = e1 <= e2
+                | otherwise = v1 >= v2
+    \end{lstlisting}
+
+    Makes it so that \lstinline{Monomial}s can be ordered. This is especially useful when normalizing \lstinline{Polynomial}s.
+
+    \item \begin{lstlisting}
+instance Show Monomial where
+    show :: Monomial -> String
+    show (Monomial c m)
+        | Data.Map.null m = showReal c
+        | c == 1 = showVars m
+        | c == (-1) = '-' : showVars m
+        | otherwise = showReal c ++ showVars m
+        where
+            showVars m = concat $ mapWithKey showVar m
+            showVar v 1 = [v]
+            showVar v e = v : showSuperscript (toInteger e)
+    \end{lstlisting}
+
+    Utility instanciation of \lstinline{Show} for easier printing of \lstinline{Monomial}s.
+
+    \item \begin{lstlisting}
+instance Read Monomial where
+    readsPrec :: Int -> ReadS Monomial
+    readsPrec _ s = [readMonomial s]
+        where
+        readMonomial :: String -> (Monomial, String)
+        readMonomial s' = (Monomial coeff vars, s''')
+            where
+            (coeff, s'') = readCoefficient s'
+            (vars, s''') = readVars s''
+    
+        readCoefficient :: String -> (Coefficient, String)
+        readCoefficient ('-' : cs) = (-f, s)
+            where
+            (f, s) = readCoefficient cs
+        readCoefficient ('+' : cs) = readCoefficient cs
+        readCoefficient (' ' : cs) = readCoefficient cs
+        readCoefficient cs = case f of
+            "" -> (1, s)
+            f -> (read f, s)
+            where
+            (f, s) = span (\c -> isDigit c || c == '.') cs
+    
+        readVars :: String -> (Map Variable Exponent, String)
+        readVars vs = (fromList $ readVarsHelper f, s)
+            where
+            (f, s) = span (\c -> isSpace c || isDigit c || isAsciiLower c || c == '*' || c == '^') vs
+    
+            readVarsHelper :: String -> [(Variable, Exponent)]
+            readVarsHelper "" = []
+            readVarsHelper (' ' : s) = readVarsHelper s
+            readVarsHelper s = (v, e) : readVarsHelper s''
+                where
+                readVar :: String -> (Variable, String)
+                readVar "" = error "No read"
+                readVar (v : vs)
+                    | v == '*' || v == ' ' = readVar vs
+                    | isAsciiLower v = (v, vs)
+                    | otherwise = error "No read"
+    
+                (v, s') = readVar s
+    
+                readExponent :: String -> Exponent
+                readExponent "" = One
+                readExponent ('^' : es) = readExponent es
+                readExponent (' ' : es) = readExponent es
+                readExponent e = fromInteger $ read e
+    
+                (e, s'') = (readExponent es, s'')
+                    where
+                    (es, s'') = span (\c -> isSpace c || isDigit c || c == '^') s'
+    
+    readList :: ReadS [Monomial]
+    readList s = [(helper s, "")]
+        where
+        helper "" = []
+        helper s = m : helper s'
+            where
+            (m, s') = head (reads s :: [(Monomial, String)])
+    \end{lstlisting}
+
+    Utility instanciation of \lstinline{Read} that allows a \lstinline{Monomial} to be parsed an input string.
+
+\end{itemize}
+
+\subsection{Natural}
+
+\begin{itemize}
+    \item \begin{lstlisting}
+instance Enum Natural where
+    toEnum :: Int -> Natural
+    toEnum n
+        | n == 1 = One
+        | n > 1 = Suc $ toEnum (n - 1)
+        | otherwise = error "Cannot be negative"
+    
+    fromEnum :: Natural -> Int
+    fromEnum One = 1
+    fromEnum (Suc n) = 1 + fromEnum n
+    \end{lstlisting}
+
+    Utility instantiation of \lstinline{Enum} that allows \lstinline{Natural}s to be convert from and to \lstinline{Integer}s.
+
+    \item \begin{lstlisting}
+instance Num Natural where
+    (+) :: Natural -> Natural -> Natural
+    a + b = toEnum $ fromEnum a + fromEnum b
+    
+    (*) :: Natural -> Natural -> Natural
+    a * b = toEnum $ fromEnum a * fromEnum b
+    
+    (-) :: Natural -> Natural -> Natural
+    a - b
+        | number <= 0 = error "Negative difference"
+        | otherwise = toEnum number
+        where
+        number = fromEnum a - fromEnum b
+    
+    abs :: Natural -> Natural
+    abs n = n
+    
+    signum :: Natural -> Natural
+    signum p = 1
+    
+    fromInteger :: Integer -> Natural
+    fromInteger n
+        | n < 1 = error "Must be positive"
+        | n == 1 = One
+        | otherwise = Suc (fromInteger (n Prelude.- 1))
+    
+    negate :: Natural -> Natural
+    negate = error "Cannot negate value"
+    \end{lstlisting}
+
+    Makes it so that \lstinline{Natural}s are treated as native number types.
+
+    \item \begin{lstlisting}
+instance Show Natural where
+  show :: Natural -> String
+  show = show . fromEnum
+    \end{lstlisting}
+
+    Utility instantiation of \lstinline{Show} that facilitates printing \lstinline{Natural} numbers.
+
+    \item \begin{lstlisting}
+instance Real Natural where
+    toRational :: Natural -> Rational
+    toRational x = toInteger x % 1
+    \end{lstlisting}
+
+    Utility instantiation of \lstinline{Real} that is needed to be able to instantiate \lstinline{Integral}.
+
+    \item \begin{lstlisting}
+instance Integral Natural where
+    quotRem :: Natural -> Natural -> (Natural, Natural)
+    quotRem x y = (toEnum q, toEnum r)
+        where
+        (q, r) = quotRem (fromEnum x) (fromEnum y)
+    
+    toInteger :: Natural -> Integer
+    toInteger = toInteger . fromEnum      
+    \end{lstlisting}
+
+    Utility instantiation of \lstinline{Integral} that makes it so that \lstinline{Natural} numbers are treated as \lstinline{Integer} numbers.
+
 \end{itemize}
 
 \section{Usage examples}

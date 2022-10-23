@@ -1,3 +1,4 @@
+{-# LANGUAGE InstanceSigs #-}
 module Data.Monomial where
 
 import ClassesAndTypes (Coefficient, Differentiable (..), Exponent, Variable)
@@ -10,27 +11,35 @@ import Util (showReal, showSuperscript)
 data Monomial = Monomial Coefficient (Map Variable Exponent) deriving (Eq)
 
 instance Num Monomial where
+  (+) :: Monomial -> Monomial -> Monomial
   Monomial c1 m1 + Monomial c2 m2
     | m1 == m2 = Monomial (c1 + c2) m1
     | otherwise = error "Can't add monomials with different degrees"
 
+  (*) :: Monomial -> Monomial -> Monomial
   Monomial c1 m1 * Monomial c2 m2 = Monomial (c1 * c2) (unionWith (+) m1 m2)
 
+  abs :: Monomial -> Monomial
   abs (Monomial n m) = Monomial (abs n) m
 
+  signum :: Monomial -> Monomial
   signum (Monomial n m) = Monomial (signum n) empty
 
+  fromInteger :: Integer -> Monomial
   fromInteger n = Monomial (fromInteger n) empty
 
+  negate :: Monomial -> Monomial
   negate (Monomial n m) = Monomial (-n) m
 
 instance Differentiable Monomial where
+  (//) :: Monomial -> Variable -> Monomial
   Monomial n m // v = case Data.Map.lookup v m of
     Nothing -> 0
     Just One -> Monomial n (delete v m)
     Just exp -> Monomial (n * fromInteger (toInteger exp)) (adjust (\x -> x - One) v m)
 
 instance Show Monomial where
+  show :: Monomial -> String
   show (Monomial c m)
     | Data.Map.null m = showReal c
     | c == 1 = showVars m
@@ -42,6 +51,7 @@ instance Show Monomial where
       showVar v e = v : showSuperscript (toInteger e)
 
 instance Ord Monomial where
+  (<=) :: Monomial -> Monomial -> Bool
   Monomial ca ea <= Monomial cb eb
     | ea == eb = ca <= cb
     | otherwise = or $ zipWith compare (toList ea) (toList eb)
@@ -51,6 +61,7 @@ instance Ord Monomial where
         | otherwise = v1 >= v2
 
 instance Read Monomial where
+  readsPrec :: Int -> ReadS Monomial
   readsPrec _ s = [readMonomial s]
     where
       readMonomial :: String -> (Monomial, String)
@@ -100,6 +111,7 @@ instance Read Monomial where
                 where
                   (es, s'') = span (\c -> isSpace c || isDigit c || c == '^') s'
 
+  readList :: ReadS [Monomial]
   readList s = [(helper s, "")]
     where
       helper "" = []
