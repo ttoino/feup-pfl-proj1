@@ -22,24 +22,24 @@
     aboveskip=3mm,
     belowskip=3mm,
     showstringspaces=false,
+    upquote=true,
     basicstyle={\small\ttfamily},
     keywordstyle=\color{blue},
-    commentstyle=\color{dkgreen},
+    commentstyle=\color{gray},
     stringstyle=\color{mauve},
     typestyle=\color{orange},
     promptstyle=\color{dkgreen},
     escapeinside={\%@}{@)},
     breaklines=true,
     breakatwhitespace=true,
+    morestring=[s]{'}{'},
     moretypes={
         Map, Natural, Variable, Exponent, Coefficient, Monomial, Polynomial, Differentiable
     },
     moreprompt={
         ghci>
     },
-    alsoletter=>,
-    numbers=left,
-    stepnumber=5,
+    alsoletter=>
 }
 
 \title{PFL Project}
@@ -142,8 +142,8 @@ instance Differentiable Polynomial where
     p // v = normalize $ p !// v
     \end{lstlisting}
 
-    Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
-    
+          Makes a \lstinline{Polynomial} inherently differentiable. This functions basically differentiates each \lstinline{Monomial} and then normalizes the output.
+
     \item \begin{lstlisting}
 instance Num Polynomial where
     (+) :: Polynomial -> Polynomial -> Polynomial
@@ -165,7 +165,7 @@ instance Num Polynomial where
     negate (Polynomial x) = Polynomial $ map negate x
     \end{lstlisting}
 
-    Makes a \lstinline{Polynomial} be treated as a \lstinline{Num} so that common number operations can be performed on \lstinline{Polynomial}s. This is basically a way to perform the same operations on all the \lstinline{Monomial}s that make up a \lstinline{Polynomial}.
+          Makes a \lstinline{Polynomial} be treated as a \lstinline{Num} so that common number operations can be performed on \lstinline{Polynomial}s. This is basically a way to perform the same operations on all the \lstinline{Monomial}s that make up a \lstinline{Polynomial}.
 
     \item \begin{lstlisting}
 instance Read Polynomial where
@@ -173,35 +173,35 @@ instance Read Polynomial where
     readsPrec _ s = [(Polynomial $ read s, "")]
     \end{lstlisting}
 
-    Utility instantiation of \lstinline{Read} so that \lstinline{Polynomial}s can be parsed directly from an input string.
+          Utility instantiation of \lstinline{Read} so that \lstinline{Polynomial}s can be parsed directly from an input string.
 
     \item \begin{lstlisting}
 (!+) :: Polynomial -> Polynomial -> Polynomial
 Polynomial x !+ Polynomial y = Polynomial $ x ++ y
     \end{lstlisting}
 
-    Adds two \lstinline{Polynomial}s, without normalizing the output. Since \lstinline{Polynomial}s are just a list of \lstinline{Monomial}s, this just creates a \lstinline{Polynomial} that results from the concatenation of all the \lstinline{Monomial}s in the two input \lstinline{Polynomial}s.
+          Adds two \lstinline{Polynomial}s, without normalizing the output. Since \lstinline{Polynomial}s are just a list of \lstinline{Monomial}s, this just creates a \lstinline{Polynomial} that results from the concatenation of all the \lstinline{Monomial}s in the two input \lstinline{Polynomial}s.
 
     \item \begin{lstlisting}
 (!-) :: Polynomial -> Polynomial -> Polynomial
 x !- y = x !+ negate y
     \end{lstlisting}
 
-    Subtracts two \lstinline{Polynomial}s, without normalizing the output. This just calls \lstinline{(!+)} but having the second \lstinline{Polynomial} negated.
+          Subtracts two \lstinline{Polynomial}s, without normalizing the output. This just calls \lstinline{(!+)} but having the second \lstinline{Polynomial} negated.
 
     \item \begin{lstlisting}
 (!*) :: Polynomial -> Polynomial -> Polynomial
 Polynomial x !* Polynomial y = Polynomial [i * j | i <- x, j <- y]
     \end{lstlisting}
 
-    Multiplies both \lstinline{Polynomial}s, without normalizing the output. This is basically performing a Cartesian product between the inputs' \lstinline{Monomial}s.
+          Multiplies both \lstinline{Polynomial}s, without normalizing the output. This is basically performing a Cartesian product between the inputs' \lstinline{Monomial}s.
 
     \item \begin{lstlisting}
 (!//) :: Polynomial -> Variable -> Polynomial
 Polynomial p !// v = Polynomial $ map (// v) p
     \end{lstlisting}
 
-    Differentiates a \lstinline{Polynomial} without normalizing the output. This just applies a mapping to differentiate each of this \lstinline{Polynomial}'s \lstinline{Monomial}s.
+          Differentiates a \lstinline{Polynomial} without normalizing the output. This just applies a mapping to differentiate each of this \lstinline{Polynomial}'s \lstinline{Monomial}s.
 
 \end{itemize}
 
@@ -216,8 +216,8 @@ instance Differentiable Monomial where
         Just One -> Monomial n (delete v m)
         Just exp -> Monomial (n * fromInteger (toInteger exp)) (adjust (\x -> x - One) v m)      
     \end{lstlisting}
-    
-    Makes a \lstinline{Monomial} inherently differentiable. If the new exponent of the variable of differentiation in the \lstinline{Monomial} is 1, then the exponent is removed from this \lstinline{Monomial}'s "exponent map". Otherwise, the model remains the same, having in mind the differentiation rules of mathematical monomials.
+
+          Makes a \lstinline{Monomial} inherently differentiable. If the new exponent of the variable of differentiation in the \lstinline{Monomial} is 1, then the exponent is removed from this \lstinline{Monomial}'s "exponent map". Otherwise, the model remains the same, having in mind the differentiation rules of mathematical monomials.
 
     \item \begin{lstlisting}
 instance Num Monomial where
@@ -242,7 +242,7 @@ instance Num Monomial where
     negate (Monomial n m) = Monomial (-n) m
     \end{lstlisting}
 
-    Makes a \lstinline{Monomial} be treated as a \lstinline{Num}, so that common number operations can be performed on them.
+          Makes a \lstinline{Monomial} be treated as a \lstinline{Num}, so that common number operations can be performed on them.
 
     \item \begin{lstlisting}
 instance Ord Monomial where
@@ -256,7 +256,7 @@ instance Ord Monomial where
                 | otherwise = v1 >= v2
     \end{lstlisting}
 
-    Makes it so that \lstinline{Monomial}s can be ordered. This is especially useful when normalizing \lstinline{Polynomial}s.
+          Makes it so that \lstinline{Monomial}s can be ordered. This is especially useful when normalizing \lstinline{Polynomial}s.
 
     \item \begin{lstlisting}
 instance Show Monomial where
@@ -272,7 +272,7 @@ instance Show Monomial where
             showVar v e = v : showSuperscript (toInteger e)
     \end{lstlisting}
 
-    Utility instanciation of \lstinline{Show} for easier printing of \lstinline{Monomial}s.
+          Utility instanciation of \lstinline{Show} for easier printing of \lstinline{Monomial}s.
 
     \item \begin{lstlisting}
 instance Read Monomial where
@@ -335,7 +335,7 @@ instance Read Monomial where
             (m, s') = head (reads s :: [(Monomial, String)])
     \end{lstlisting}
 
-    Utility instanciation of \lstinline{Read} that allows a \lstinline{Monomial} to be parsed an input string.
+          Utility instanciation of \lstinline{Read} that allows a \lstinline{Monomial} to be parsed an input string.
 
 \end{itemize}
 
@@ -355,7 +355,7 @@ instance Enum Natural where
     fromEnum (Suc n) = 1 + fromEnum n
     \end{lstlisting}
 
-    Utility instantiation of \lstinline{Enum} that allows \lstinline{Natural}s to be convert from and to \lstinline{Integer}s.
+          Utility instantiation of \lstinline{Enum} that allows \lstinline{Natural}s to be convert from and to \lstinline{Integer}s.
 
     \item \begin{lstlisting}
 instance Num Natural where
@@ -388,7 +388,7 @@ instance Num Natural where
     negate = error "Cannot negate value"
     \end{lstlisting}
 
-    Makes it so that \lstinline{Natural}s are treated as native number types.
+          Makes it so that \lstinline{Natural}s are treated as native number types.
 
     \item \begin{lstlisting}
 instance Show Natural where
@@ -396,7 +396,7 @@ instance Show Natural where
   show = show . fromEnum
     \end{lstlisting}
 
-    Utility instantiation of \lstinline{Show} that facilitates printing \lstinline{Natural} numbers.
+          Utility instantiation of \lstinline{Show} that facilitates printing \lstinline{Natural} numbers.
 
     \item \begin{lstlisting}
 instance Real Natural where
@@ -404,7 +404,7 @@ instance Real Natural where
     toRational x = toInteger x % 1
     \end{lstlisting}
 
-    Utility instantiation of \lstinline{Real} that is needed to be able to instantiate \lstinline{Integral}.
+          Utility instantiation of \lstinline{Real} that is needed to be able to instantiate \lstinline{Integral}.
 
     \item \begin{lstlisting}
 instance Integral Natural where
@@ -417,7 +417,7 @@ instance Integral Natural where
     toInteger = toInteger . fromEnum      
     \end{lstlisting}
 
-    Utility instantiation of \lstinline{Integral} that makes it so that \lstinline{Natural} numbers are treated as \lstinline{Integer} numbers.
+          Utility instantiation of \lstinline{Integral} that makes it so that \lstinline{Natural} numbers are treated as \lstinline{Integer} numbers.
 
 \end{itemize}
 
