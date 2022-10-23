@@ -73,7 +73,7 @@ instance Ord Monomial where
 -- | Implements creating a monomial (or a monomial list) from a string
 --
 -- Will fail if the string does not match an expected format roughly
--- equivalent to the regular expression `[+-]?\d*\.?\d*(\*?[a-z]^?\d*)*`
+-- equivalent to the regular expression `[+-]?\d*\.?\d*(\*?[a-z]\^?\d*)*`
 -- with some whitespace also ignored
 instance Read Monomial where
   readsPrec _ s = [readMonomial s]

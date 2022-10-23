@@ -21,7 +21,7 @@ instance Enum Natural where
   fromEnum One = 1
   fromEnum (Suc n) = 1 + fromEnum n
 
--- | Implements all num operations on naturals
+-- | Implements most num operations on naturals
 instance Num Natural where
   a + b = toEnum $ fromEnum a + fromEnum b
 
