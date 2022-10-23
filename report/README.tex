@@ -315,7 +315,7 @@ instance Read Monomial where
           (m, s') = head (reads s :: [(Monomial, String)])
     \end{lstlisting}
 
-          Utility instanciation of \lstinline{Read} that allows a \lstinline{Monomial} to be parsed an input string.
+          Utility instanciation of \lstinline{Read} that allows a \lstinline{Monomial} to be parsed from an input string.
 
 \end{itemize}
 
@@ -333,7 +333,7 @@ instance Enum Natural where
   fromEnum (Suc n) = 1 + fromEnum n
     \end{lstlisting}
 
-          Utility instantiation of \lstinline{Enum} that allows \lstinline{Natural}s to be convert from and to \lstinline{Integer}s.
+          Utility instantiation of \lstinline{Enum} that allows \lstinline{Natural}s to be converted from and to \lstinline{Integer}s.
 
     \item \begin{lstlisting}
 instance Num Natural where
