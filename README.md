@@ -2,24 +2,21 @@
 
 First project for the PFL course unit at FEUP.
 
-This repository holds the files submitted for the 1st PFL project.
-
-## Project goal
-
 The goal of this project was to develop a representation of mathematical **Polynomials** and implement functions that could manipulate them, namely:
+
 - addition and subtraction
 - multiplication
 - differentiation
 - normalization
 
-Besides these, the designed structures should be parsable from and to an adequate textual representation.
+Besides these, the designed structures should be parsable to and from an adequate textual representation.
 
 ## Unit info
 
-* **Name**: Programação Funcional e em Lógica (Functional and Logic Programming)
-* **Date**: Year 2, Semester 2, 2021/22
-* **See also**: [feup-pfl](https://github.com/ttoino/feup-pfl)
-* [**More info**](https://sigarra.up.pt/feup/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=484434)
+- **Name**: Programação Funcional e em Lógica (Functional and Logic Programming)
+- **Date**: Year 3, Semester 1, 2022/23
+- **See also**: [feup-pfl-haskell](https://github.com/ttoino/feup-pfl-haskell), [feup-pfl-prolog](https://github.com/ttoino/feup-pfl-prolog), [feup-pfl-proj2](https://github.com/ttoino/feup-pfl-proj2)
+- [**More info**](https://sigarra.up.pt/feup/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=484434)
 
 ## Disclaimer
 
