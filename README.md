@@ -11,6 +11,8 @@ The goal of this project was to develop a representation of mathematical **Polyn
 
 Besides these, the designed structures should be parsable to and from an adequate textual representation.
 
+[Final Report](report/README.pdf)
+
 ## Unit info
 
 - **Name**: Programação Funcional e em Lógica (Functional and Logic Programming)
